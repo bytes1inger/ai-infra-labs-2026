@@ -1,0 +1,56 @@
+name: Sync posts to portfolio
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'blog/posts/**'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout labs repo
+        uses: actions/checkout@v4
+        with:
+          path: labs
+
+      - name: Checkout portfolio repo
+        uses: actions/checkout@v4
+        with:
+          repository: bytes1inger/portfolio
+          token: ${{ secrets.PORTFOLIO_REPO_TOKEN }}
+          path: portfolio
+
+      - name: Sync posts
+        run: |
+          # Remove all existing synced posts (handles deletions cleanly)
+          rm -f portfolio/src/content/blog/*.md
+
+          # Copy all posts from labs repo
+          if ls labs/blog/posts/*.md 1>/dev/null 2>&1; then
+            cp labs/blog/posts/*.md portfolio/src/content/blog/
+            echo "Synced posts:"
+            ls portfolio/src/content/blog/*.md
+          else
+            echo "No posts found in labs/blog/posts/"
+          fi
+
+      - name: Commit and push to portfolio
+        working-directory: portfolio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add src/content/blog/
+
+          if git diff --staged --quiet; then
+            echo "No changes — portfolio is already up to date"
+          else
+            git commit -m "sync: update blog posts from ai-infra-labs-2026
+
+          Triggered by: ${{ github.sha }}
+          Commit: ${{ github.event.head_commit.message }}"
+            git push
+          fi
