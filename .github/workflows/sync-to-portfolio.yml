@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'blog/posts/**'
+      - 'labs/status.json'
 
 jobs:
   sync:
@@ -37,18 +38,24 @@ jobs:
             echo "No posts found in labs/blog/posts/"
           fi
 
+      - name: Sync lab status
+        run: |
+          mkdir -p portfolio/src/data
+          cp labs/labs/status.json portfolio/src/data/labs-status.json
+          echo "Synced labs/status.json → src/data/labs-status.json"
+
       - name: Commit and push to portfolio
         working-directory: portfolio
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add src/content/blog/
+          git add src/content/blog/ src/data/
 
           if git diff --staged --quiet; then
             echo "No changes — portfolio is already up to date"
           else
-            git commit -m "sync: update blog posts from ai-infra-labs-2026
+            git commit -m "sync: update from ai-infra-labs-2026
 
           Triggered by: ${{ github.sha }}
           Commit: ${{ github.event.head_commit.message }}"
